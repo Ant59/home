@@ -1,0 +1,13 @@
+default_config:
+
+homeassistant:
+  name: Home
+  latitude: 51.216890
+  longitude: 2.984393
+  unit_system: metric
+  time_zone: Europe/London
+
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - {{ caddy_network.network.IPAM.Config[0].Subnet }}

@@ -1,0 +1,37 @@
+# code: language=ansible
+
+- name: Create app
+  ansible.builtin.import_tasks: tasks/application.yaml
+  vars:
+    name: frigate
+
+- name: Frigate config file
+  ansible.builtin.copy:
+    src: config.yml
+    dest: "{{ app_dir.path }}/config.yml"
+    owner: "{{ user.name }}"
+    group: "{{ user.name }}"
+    mode: '0744'
+
+- name: Start Frigate
+  community.docker.docker_container:
+    name: frigate
+    image: ghcr.io/blakeblackshear/frigate:stable
+    state: started
+    privileged: true
+    restart_policy: "unless-stopped"
+    labels:
+      caddy: frigate.home.derham.me
+      caddy.reverse_proxy: "{% raw %}{{upstreams 5000}}{% endraw %}"
+    networks:
+      - name: mosquitto
+      - name: caddy
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - "{{ app_dir.path }}/config.yml:/config/config.yml"
+      - /mnt/footage:/media/frigate
+    ports:
+      - 5000
+      - 8554
+    # https://github.com/blakeblackshear/frigate/issues/3108
+    # user: "{{ user.uid }}:{{ user.group }}"

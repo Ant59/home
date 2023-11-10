@@ -1,0 +1,49 @@
+# code: language=ansible
+
+- name: Create app
+  ansible.builtin.import_tasks: tasks/application.yaml
+  vars:
+    name: homeassistant
+
+- name: Create Docker network
+  community.docker.docker_network:
+    name: caddy
+  register: caddy_network
+
+- name: Template Homeassistant config
+  ansible.builtin.template:
+    src: configuration.yaml.j2
+    dest: "{{ app_dir.path }}/configuration.yaml"
+    owner: "{{ user.name }}"
+    group: "{{ user.name }}"
+    mode: "0744"
+
+- name: Start Homeassistant
+  community.docker.docker_container:
+    name: homeassistant
+    image: lscr.io/linuxserver/homeassistant:2023.8.3
+    state: started
+    restart_policy: "unless-stopped"
+    networks:
+      - name: mosquitto
+      - name: caddy
+    env:
+      PUID: "{{ user.uid }}"
+      PGID: "{{ user.group }}"
+      TZ: Europe/London
+      REQUESTS_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt
+    labels:
+      caddy: homeassistant.home.derham.me
+      caddy.reverse_proxy: "{% raw %}{{upstreams 8123}}{% endraw %}"
+      homepage.group: Automation
+      homepage.name: Home Assistant
+      homepage.icon: home-assistant.png
+      homepage.href: http://homeassistant.home.derham.me/
+    volumes:
+      - "{{ app_dir.path }}:/config"
+      - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
+      - /mnt/footage:/mnt/footage:ro
+    ports:
+      - 8123
+    devices:
+      - /dev/ttyACM0:/dev/ttyACM0

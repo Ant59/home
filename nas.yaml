@@ -1,0 +1,71 @@
+# code: language=ansible
+
+- name: NAS Setup
+  hosts: nas.home.derham.me
+  become: true
+  vars:
+    base_dir: /srv
+
+  pre_tasks:
+    - name: Bootstrap the hosts to trust the CA
+      ansible.builtin.include_role:
+        name: maxhoesel.smallstep.step_bootstrap_host
+      vars:
+        step_cli_version: "0.24.4"
+        step_bootstrap_ca_url: https://ca.home.derham.me
+        step_bootstrap_fingerprint: "e0d6b8d064a2bb9adbaf327363a36f2f5233de3aa518fb9c0d9f83182e0b5a1c"
+    - name: Install Python Docker package
+      ansible.builtin.include_role:
+        name: geerlingguy.pip
+      vars:
+        pip_install_packages:
+          - name: docker
+    - name: Docker - make sure systemd dir exists
+      ansible.builtin.file:
+        path: /etc/systemd/system/docker.service.d
+        state: directory
+        mode: "0755"
+        owner: root
+        group: root
+    - name: Docker - override systemd service unit
+      ansible.builtin.copy:
+        dest: "/etc/systemd/system/docker.service.d/override.conf"
+        content: |
+          [Service]
+          ExecStart=
+          ExecStart=/usr/bin/dockerd
+        mode: "0755"
+        owner: root
+        group: root
+      register: systemd_changed
+    - name: Just force systemd to reread configs
+      ansible.builtin.systemd:
+        daemon_reload: true
+      when: systemd_changed.changed
+    - name: Install Docker
+      ansible.builtin.include_role:
+        name: geerlingguy.docker
+      vars:
+        docker_users:
+          - admin
+        docker_install_compose: false
+        docker_daemon_options:
+          containerd: "/run/containerd/containerd.sock"
+          hosts: ["tcp://0.0.0.0:2375", "unix:///var/run/docker.sock"]
+
+  roles:
+    - caddy
+    - mosquitto
+    - homeassistant
+    - frigate
+    - unifi
+    - homepage
+
+  tasks:
+    - name: Copy terminfo
+      ansible.builtin.copy:
+        src: files/alacritty.terminfo
+        dest: /etc/terminfo/a/alacritty
+        owner: root
+        group: root
+        mode: "0644"

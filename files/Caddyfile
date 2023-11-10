@@ -1,0 +1,12 @@
+{
+	acme_ca https://ca.home.derham.me/acme/acme/directory
+}
+
+pihole.home.derham.me {
+	root * /var/www/html
+	encode zstd gzip
+	php_fastcgi unix//run/php/php8.1-fpm.sock {
+		env SERVER_ADDR {host}
+	}
+	file_server
+}

@@ -1,0 +1,114 @@
+# code: language=ansible
+
+- name: EdgeRouter Setup
+  gather_facts: false
+  hosts: router
+  become: true
+  vars:
+    acme_ca: https://ca.home.derham.me/acme/acme/directory
+    fqdn: "{{ inventory_hostname }}.home.derham.me"
+
+  pre_tasks:
+    - name: Enable Debian packages
+      connection: ansible.netcommon.network_cli
+      community.network.edgeos_config:
+        save: true
+        lines:
+          - set system package repository stretch components 'main contrib non-free'
+          - set system package repository stretch distribution stretch
+          - set system package repository stretch url http://archive.debian.org/debian
+
+  roles:
+    - home_ca_certificate
+
+  tasks:
+    - name: Create ACME directory
+      ansible.builtin.file:
+        path: /config/acme
+        state: directory
+        mode: "0775"
+    - name: Download acme.sh
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/p3lim/edgerouter-acme/master/renew.sh
+        dest: /config/acme/renew.sh
+        mode: "0770"
+        owner: root
+        group: vyattacfg
+    #    - name: Insert lighttpd config
+    #      ansible.builtin.lineinfile:
+    #        path: /etc/lighttpd/lighttpd.conf
+    #        regexp: '^include "acme.conf"'
+    #        insertbefore: '^include "mime.conf"'
+    #        line: 'include "acme.conf"'
+    #    - name: Renew certificate
+    #      ansible.builtin.shell: /config/acme/renew.sh -d {{ fqdn }} -u {{ acme_ca }}
+    #      notify: Restart web UI
+    - name: Create Wireguard directory
+      ansible.builtin.file:
+        path: /config/wireguard
+        state: directory
+        owner: root
+        group: vyattacfg
+        mode: "0755"
+    - name: Create Wireguard router directory
+      ansible.builtin.file:
+        path: /config/wireguard/router
+        state: directory
+        owner: root
+        group: vyattacfg
+        mode: "0755"
+    - name: Install Wireguard package
+      ansible.builtin.apt:
+        deb: https://github.com/WireGuard/wireguard-vyatta-ubnt/releases/download/1.0.20220627-1/e50-v2-v1.0.20220627-v1.0.20210914.deb
+        state: present
+    - name: Copy Wireguard private key
+      ansible.builtin.copy:
+        src: wireguard/router/privatekey
+        dest: /config/wireguard/router/privatekey
+        owner: root
+        group: vyattacfg
+        mode: "0750"
+    - name: Copy Wireguard client pubkeys
+      ansible.builtin.copy:
+        src: wireguard/{{ item }}/publickey
+        dest: /config
+        owner: root
+        group: vyattacfg
+        mode: "0755"
+      loop:
+        - korra
+        - phone
+        - router
+    - name: Configure the router
+      connection: ansible.netcommon.network_cli
+      community.network.edgeos_config:
+        save: true
+        lines:
+          - set service gui cert-file /config/acme/ssl/cert.pem
+          - set service gui ca-file /config/acme/ssl/ca.crt
+          - set system task-scheduler task acme-renew executable path /config/acme/renew.sh
+          - set system task-scheduler task acme-renew executable arguments '-d {{ fqdn }} -u {{ acme_ca }}'
+          - set system task-scheduler task acme-renew interval 8h
+          - set system host-name {{ inventory_hostname }}
+          - set system offload hwnat enable
+          - set system ipv6 disable
+          - set interfaces wireguard wg0 address 192.168.33.1/24
+          - set interfaces wireguard wg0 listen-port 51820
+          - set interfaces wireguard wg0 route-allowed-ips true
+          - set interfaces wireguard wg0 peer {{ lookup('ansible.builtin.file', 'wireguard/phone/publickey') }}
+          - set interfaces wireguard wg0 peer {{ lookup('ansible.builtin.file', 'wireguard/phone/publickey') }} allowed-ips 192.168.33.101/24
+          - set interfaces wireguard wg0 peer {{ lookup('ansible.builtin.file', 'wireguard/phone/publickey') }} description phone
+          - set interfaces wireguard wg0 peer {{ lookup('ansible.builtin.file', 'wireguard/korra/publickey') }}
+          - set interfaces wireguard wg0 peer {{ lookup('ansible.builtin.file', 'wireguard/korra/publickey') }} allowed-ips 192.168.33.102/24
+          - set interfaces wireguard wg0 peer {{ lookup('ansible.builtin.file', 'wireguard/korra/publickey') }} description korra
+          - set interfaces wireguard wg0 private-key /config/wireguard/router/privatekey
+          - set firewall name WAN_LOCAL rule 20 action accept
+          - set firewall name WAN_LOCAL rule 20 protocol udp
+          - set firewall name WAN_LOCAL rule 20 description 'WireGuard'
+          - set firewall name WAN_LOCAL rule 20 destination port 51820
+
+  handlers:
+    - name: Restart web UI
+      ansible.builtin.systemd_service:
+        name: lighttpd
+        state: restarted

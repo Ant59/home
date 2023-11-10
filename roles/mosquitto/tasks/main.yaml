@@ -1,0 +1,36 @@
+# code: language=ansible
+
+- name: Create app
+  ansible.builtin.import_tasks: tasks/application.yaml
+  vars:
+    name: mosquitto
+    uid: 1883
+    dirs:
+      - config
+
+- name: Mosquitto config file
+  ansible.builtin.copy:
+    src: mosquitto.conf
+    dest: "{{ base_dir }}/mosquitto/config/mosquitto.conf"
+    owner: "{{ user.name }}"
+    group: "{{ user.name }}"
+    mode: '0744'
+
+- name: Create Docker network
+  community.docker.docker_network:
+    name: mosquitto
+
+- name: Start mosquitto
+  community.docker.docker_container:
+    name: mosquitto
+    image: eclipse-mosquitto:2.0
+    state: started
+    restart_policy: "unless-stopped"
+    networks:
+      - name: mosquitto
+    volumes:
+      - "{{ app_dir.path }}:/mosquitto"
+    ports:
+      - 1883
+      - 9001
+    user: "{{ user.uid }}:{{ user.group }}"

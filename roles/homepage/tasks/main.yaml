@@ -1,0 +1,36 @@
+# code: language=ansible
+
+- name: Create app
+  ansible.builtin.import_tasks: tasks/application.yaml
+  vars:
+    name: homepage
+
+- name: Template Docker config
+  ansible.builtin.template:
+    src: docker.yaml.j2
+    dest: "{{ app_dir.path }}/docker.yaml"
+    owner: "{{ user.name }}"
+    group: "{{ user.name }}"
+    mode: "0664"
+
+- name: Start Homepage
+  community.docker.docker_container:
+    name: homepage
+    image: ghcr.io/gethomepage/homepage:latest
+    state: started
+    restart_policy: "unless-stopped"
+    networks:
+      - name: caddy
+    env:
+      PUID: "{{ user.uid }}"
+      PGID: "{{ user.group }}"
+      TZ: Europe/London
+    labels:
+      caddy: homepage.home.derham.me, home.derham.me
+      caddy.reverse_proxy: "{% raw %}{{upstreams 3000}}{% endraw %}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
+      - "{{ app_dir.path }}:/app/config"
+    ports:
+      - 3000

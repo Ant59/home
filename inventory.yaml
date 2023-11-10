@@ -1,0 +1,25 @@
+# code: language=ansible
+
+servers:
+  hosts:
+    router.home.derham.me:
+      ansible_host: 192.168.0.1
+      ansible_user: antony
+      ansible_network_os: community.network.edgeos
+    pihole.home.derham.me:
+      ansible_host: 192.168.0.2
+      ansible_user: ubuntu
+    nas.home.derham.me:
+      ansible_host: 192.168.0.162
+      ansible_user: admin
+    ca.home.derham.me:
+      ansible_host: 192.168.0.94
+      ansible_user: antony
+clients:
+  hosts:
+    skynet.home.derham.me:
+      ansible_host: 192.168.190
+      ansible_user: antony
+    korra.home.derham.me:
+      ansible_host: 192.168.0.60
+      ansible_user: antony

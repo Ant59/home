@@ -1,0 +1,26 @@
+# code: language=ansible
+
+- name: Create user for application
+  ansible.builtin.user:
+    name: "{{ name }}"
+    uid: "{{ uid | default(omit) }}"
+  register: user
+
+- name: Create data directory for application
+  ansible.builtin.file:
+    path: "{{ base_dir }}/{{ name }}"
+    state: directory
+    owner: "{{ name }}"
+    group: "{{ name }}"
+    mode: "0744"
+  register: app_dir
+
+- name: Create subdirectories for application
+  when: dirs is defined
+  ansible.builtin.file:
+    path: "{{ base_dir }}/{{ name }}/{{ item }}"
+    state: directory
+    owner: "{{ name }}"
+    group: "{{ name }}"
+    mode: "0744"
+  loop: "{{ dirs }}"

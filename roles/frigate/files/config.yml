@@ -1,0 +1,56 @@
+mqtt:
+  host: mosquitto
+  enabled: True
+
+go2rtc:
+  streams:
+    driveway:
+      - "ffmpeg:http://192.168.0.89/flv?port=1935&app=bcs&stream=channel0_main.bcs&user=admin&password=#video=copy#audio=copy#audio=opus"
+    driveway_sub:
+      - "ffmpeg:http://192.168.0.89/flv?port=1935&app=bcs&stream=channel0_ext.bcs&user=admin&password="
+    frontdoor:
+      - "ffmpeg:http://frontdoorcamera.home.derham.me/flv?port=1935&app=bcs&stream=channel0_main.bcs&user=admin&password=#video=copy#audio=copy#audio=opus"
+    frontdoor_sub:
+      - "ffmpeg:http://frontdoorcamera.home.derham.me/flv?port=1935&app=bcs&stream=channel0_ext.bcs&user=admin&password="
+
+cameras:
+  driveway:
+    ffmpeg:
+      hwaccel_args: preset-rpi-64-h264
+      inputs:
+        - path: rtsp://127.0.0.1:8554/driveway?video=copy&audio=aac
+          input_args: preset-rtsp-restream
+          roles:
+            - record
+        - path: rtsp://127.0.0.1:8554/driveway_sub?video=copy
+          input_args: preset-rtsp-restream
+          roles:
+            - detect
+    detect:
+      enabled: False
+      width: 1280
+      height: 720
+    record:
+      enabled: True
+      retain:
+        days: 2
+  frontdoor:
+    ffmpeg:
+      hwaccel_args: preset-rpi-64-h264
+      inputs:
+        - path: rtsp://127.0.0.1:8554/frontdoor?video=copy&audio=aac
+          input_args: preset-rtsp-restream
+          roles:
+            - record
+        - path: rtsp://127.0.0.1:8554/frontdoor_sub?video=copy
+          input_args: preset-rtsp-restream
+          roles:
+            - detect
+    detect:
+      enabled: False
+      width: 1280
+      height: 720
+    record:
+      enabled: True
+      retain:
+        days: 2
