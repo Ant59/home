@@ -1,0 +1,43 @@
+- Developer:
+    - Github:
+        - abbr: GH
+          icon: github
+          href: https://www.github.com
+    - Phoronix:
+        - abbr: PH
+          icon: https://www.phoronix.com/favicon-32x32.png
+          href: https://www.phoronix.com
+    - Hacker News:
+        - abbr: HN
+          icon: https://news.ycombinator.com/favicon.ico
+          href: https://news.ycombinator.com
+
+- Social:
+    - Reddit:
+        - abbr: RE
+          icon: reddit
+          href: https://old.reddit.com
+
+- Media:
+    - YouTube:
+        - abbr: YT
+          icon: youtube
+          href: https://www.youtube.com
+    - Prime Video:
+        - abbr: PR
+          icon: amazon
+          href: https://www.amazon.co.uk/Amazon-Video/b/?ie=UTF8&node=3010085031
+    - BBC News:
+        - abbr: BN
+          icon: https://m.files.bbci.co.uk/modules/bbc-morph-news-waf-page-meta/5.3.0/apple-touch-icon-57x57-precomposed.png
+          href: https://news.bbc.co.uk
+
+- Shopping:
+    - Amazon Shopping:
+        - abbr: AZ
+          icon: amazon
+          href: https://www.amazon.co.uk
+    - hotukdeals:
+        - abbr: HD
+          icon: https://www.hotukdeals.com/assets/img/appicon_3ccd5.png
+          href: https://www.hotukdeals.com

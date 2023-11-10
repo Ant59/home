@@ -1,0 +1,4 @@
+base: https://home.derham.me
+target: _self
+language: en-GB
+headerStyle: clean

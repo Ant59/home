@@ -13,6 +13,18 @@
     group: "{{ user.name }}"
     mode: "0664"
 
+- name: Copy config files
+  ansible.builtin.copy:
+    src: "{{ item }}.yaml"
+    dest: "{{ app_dir.path }}/{{ item }}.yaml"
+    owner: "{{ user.name }}"
+    group: "{{ user.name }}"
+    mode: "0664"
+  loop:
+    - bookmarks
+    - services
+    - settings
+
 - name: Start Homepage
   community.docker.docker_container:
     name: homepage

@@ -39,6 +39,7 @@
       homepage.name: Home Assistant
       homepage.icon: home-assistant.png
       homepage.href: http://homeassistant.home.derham.me/
+      homepage.description: Automation dashboard
     volumes:
       - "{{ app_dir.path }}:/config"
       - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
