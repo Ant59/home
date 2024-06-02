@@ -10,7 +10,7 @@ servers:
       ansible_host: 192.168.0.2
       ansible_user: ubuntu
     nas.home.derham.me:
-      ansible_host: 192.168.0.162
+      ansible_host: nas.home.derham.me
       ansible_user: admin
     ca.home.derham.me:
       ansible_host: 192.168.0.94
@@ -18,7 +18,7 @@ servers:
 clients:
   hosts:
     skynet.home.derham.me:
-      ansible_host: 192.168.190
+      ansible_host: 192.168.191
       ansible_user: antony
     korra.home.derham.me:
       ansible_host: 192.168.0.60

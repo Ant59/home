@@ -8,41 +8,43 @@
       - data
       - config
 
-- name: Create Docker network
-  community.docker.docker_network:
+- name: Create Caddyfile
+  ansible.builtin.copy:
+    content: |
+      {
+        acme_ca https://ca.home.derham.me/acme/acme/directory
+      }
+
+      nas.home.derham.me {
+        respond "Hello, world!"
+      }
+    dest: "{{ app_dir.path }}/config/Caddyfile"
+    owner: "{{ user.name }}"
+    mode: "0644"
+
+- name: Create Podman network
+  containers.podman.podman_network:
     name: caddy
 
-- name: Ensure docker group exists
-  ansible.builtin.group:
-    name: docker
-    state: present
-  register: docker_group
-
-- name: Add user to docker group for socket access
-  ansible.builtin.user:
-    name: "{{ user.name }}"
-    groups: "{{ docker_group.name }}"
-    append: true
-
-- name: Start caddy
-  community.docker.docker_container:
+- name: Start Caddy
+  containers.podman.podman_container:
     name: caddy
-    image: lucaslorentz/caddy-docker-proxy:2.8-alpine
+    image: docker.io/caddy:2.7
     state: started
     restart_policy: "unless-stopped"
-    networks:
-      - name: caddy
+    network:
+      - caddy
     labels:
       caddy.acme_ca: https://ca.home.derham.me/acme/acme/directory
     env:
       CADDY_INGRESS_NETWORKS: caddy
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
       - "{{ app_dir.path }}/data:/data"
       - "{{ app_dir.path }}/config:/config"
+      - "{{ app_dir.path }}/config/Caddyfile:/etc/caddy/Caddyfile"
     ports:
       - 80:80
       - 443:443
       - 443:443/udp
-    user: "{{ user.uid }}:{{ docker_group.gid }}"
+    user: "{{ user.uid }}"

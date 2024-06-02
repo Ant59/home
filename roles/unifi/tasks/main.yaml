@@ -4,19 +4,52 @@
   ansible.builtin.import_tasks: tasks/application.yaml
   vars:
     name: unifi
+    dirs:
+      - db
+      - config
 
-- name: Start unifi
-  community.docker.docker_container:
+- name: Copy init script
+  ansible.builtin.copy:
+    src: init-mongo.js
+    dest: "{{ app_dir.path }}/init-mongo.js"
+    owner: "{{ user.name }}"
+    group: "{{ user.name }}"
+    mode: "0744"
+
+- name: Create Podman network
+  containers.podman.podman_network:
     name: unifi
-    image: lscr.io/linuxserver/unifi-controller:7.4.162
+
+- name: Start mongodb
+  containers.podman.podman_container:
+    name: mongo
+    image: docker.io/mongo:4.4.6
     state: started
     restart_policy: "unless-stopped"
-    networks:
-      - name: caddy
+    network:
+      - unifi
+    volumes:
+      - "{{ app_dir.path }}/db:/data/db"
+      - "{{ app_dir.path }}/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro"
+
+- name: Start unifi
+  containers.podman.podman_container:
+    name: unifi
+    image: lscr.io/linuxserver/unifi-network-application:latest
+    state: started
+    restart_policy: "unless-stopped"
+    network:
+      - caddy
+      - unifi
     env:
       PUID: "{{ user.uid }}"
       PGID: "{{ user.group }}"
       TZ: Europe/London
+      MONGO_USER: unifi
+      MONGO_PASS: B2q6gJzj
+      MONGO_HOST: mongo
+      MONGO_PORT: "27017"
+      MONGO_DBNAME: unifi
     labels:
       caddy: unifi.home.derham.me
       caddy.reverse_proxy: "{% raw %}{{upstreams https 8443}}{% endraw %}"
@@ -25,10 +58,15 @@
       homepage.group: Utilities
       homepage.name: Unifi Controller
       homepage.icon: unifi-controller.png
-      homepage.href: http://unifi.home.derham.me/
+      homepage.href: https://unifi.home.derham.me/
       homepage.description: Wi-Fi AP management
+      homepage.widget.type: unifi
+      homepage.widget.url: https://unifi.home.derham.me
+      homepage.widget.username: homepage
+      homepage.widget.password: homepage
+      homepage.widget.site: default
     volumes:
-      - "{{ app_dir.path }}:/config"
+      - "{{ app_dir.path }}/config:/config"
       - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
     ports:
       - 10001:10001/udp # Required for AP discovery

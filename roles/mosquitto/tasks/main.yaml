@@ -14,23 +14,23 @@
     dest: "{{ base_dir }}/mosquitto/config/mosquitto.conf"
     owner: "{{ user.name }}"
     group: "{{ user.name }}"
-    mode: '0744'
+    mode: "0744"
 
-- name: Create Docker network
-  community.docker.docker_network:
+- name: Create Podman network
+  containers.podman.podman_network:
     name: mosquitto
 
 - name: Start mosquitto
-  community.docker.docker_container:
+  containers.podman.podman_container:
     name: mosquitto
-    image: eclipse-mosquitto:2.0
+    image: docker.io/eclipse-mosquitto:2.0
     state: started
     restart_policy: "unless-stopped"
-    networks:
-      - name: mosquitto
+    network:
+      - mosquitto
     volumes:
       - "{{ app_dir.path }}:/mosquitto"
     ports:
       - 1883
       - 9001
-    user: "{{ user.uid }}:{{ user.group }}"
+    user: "{{ user.uid }}"

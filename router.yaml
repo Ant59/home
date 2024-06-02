@@ -8,7 +8,15 @@
     acme_ca: https://ca.home.derham.me/acme/acme/directory
     fqdn: "{{ inventory_hostname }}.home.derham.me"
 
-  pre_tasks:
+  tasks:
+    - name: Bootstrap the hosts to trust the CA
+      ansible.builtin.include_role:
+        name: maxhoesel.smallstep.step_bootstrap_host
+      vars:
+        step_cli_version: "0.24.4"
+        step_bootstrap_ca_url: https://ca.home.derham.me
+        step_bootstrap_fingerprint: "e0d6b8d064a2bb9adbaf327363a36f2f5233de3aa518fb9c0d9f83182e0b5a1c"
+
     - name: Enable Debian packages
       connection: ansible.netcommon.network_cli
       community.network.edgeos_config:
@@ -18,10 +26,6 @@
           - set system package repository stretch distribution stretch
           - set system package repository stretch url http://archive.debian.org/debian
 
-  roles:
-    - home_ca_certificate
-
-  tasks:
     - name: Create ACME directory
       ansible.builtin.file:
         path: /config/acme
@@ -34,15 +38,10 @@
         mode: "0770"
         owner: root
         group: vyattacfg
-    #    - name: Insert lighttpd config
-    #      ansible.builtin.lineinfile:
-    #        path: /etc/lighttpd/lighttpd.conf
-    #        regexp: '^include "acme.conf"'
-    #        insertbefore: '^include "mime.conf"'
-    #        line: 'include "acme.conf"'
-    #    - name: Renew certificate
-    #      ansible.builtin.shell: /config/acme/renew.sh -d {{ fqdn }} -u {{ acme_ca }}
-    #      notify: Restart web UI
+    - name: Renew certificate
+      ansible.builtin.shell: /config/acme/renew.sh -d {{ fqdn }} -u {{ acme_ca }}
+      notify: Restart web UI
+
     - name: Create Wireguard directory
       ansible.builtin.file:
         path: /config/wireguard
@@ -79,10 +78,10 @@
         - korra
         - phone
         - router
+
     - name: Configure the router
       connection: ansible.netcommon.network_cli
       community.network.edgeos_config:
-        save: true
         lines:
           - set service gui cert-file /config/acme/ssl/cert.pem
           - set service gui ca-file /config/acme/ssl/ca.crt
@@ -95,17 +94,22 @@
           - set interfaces wireguard wg0 address 192.168.33.1/24
           - set interfaces wireguard wg0 listen-port 51820
           - set interfaces wireguard wg0 route-allowed-ips true
-          - set interfaces wireguard wg0 peer {{ lookup('ansible.builtin.file', 'wireguard/phone/publickey') }}
-          - set interfaces wireguard wg0 peer {{ lookup('ansible.builtin.file', 'wireguard/phone/publickey') }} allowed-ips 192.168.33.101/24
-          - set interfaces wireguard wg0 peer {{ lookup('ansible.builtin.file', 'wireguard/phone/publickey') }} description phone
-          - set interfaces wireguard wg0 peer {{ lookup('ansible.builtin.file', 'wireguard/korra/publickey') }}
-          - set interfaces wireguard wg0 peer {{ lookup('ansible.builtin.file', 'wireguard/korra/publickey') }} allowed-ips 192.168.33.102/24
-          - set interfaces wireguard wg0 peer {{ lookup('ansible.builtin.file', 'wireguard/korra/publickey') }} description korra
           - set interfaces wireguard wg0 private-key /config/wireguard/router/privatekey
           - set firewall name WAN_LOCAL rule 20 action accept
           - set firewall name WAN_LOCAL rule 20 protocol udp
           - set firewall name WAN_LOCAL rule 20 description 'WireGuard'
           - set firewall name WAN_LOCAL rule 20 destination port 51820
+    - name: Configure WireGuard peers
+      connection: ansible.netcommon.network_cli
+      community.network.edgeos_config:
+        save: true
+        lines:
+          - set interfaces wireguard wg0 peer {{ lookup('ansible.builtin.file', 'wireguard/phone/publickey') }}
+          - set interfaces wireguard wg0 peer {{ lookup('ansible.builtin.file', 'wireguard/phone/publickey') }} allowed-ips 192.168.33.101/32
+          - set interfaces wireguard wg0 peer {{ lookup('ansible.builtin.file', 'wireguard/phone/publickey') }} description phone
+          - set interfaces wireguard wg0 peer {{ lookup('ansible.builtin.file', 'wireguard/korra/publickey') }}
+          - set interfaces wireguard wg0 peer {{ lookup('ansible.builtin.file', 'wireguard/korra/publickey') }} allowed-ips 192.168.33.102/32
+          - set interfaces wireguard wg0 peer {{ lookup('ansible.builtin.file', 'wireguard/korra/publickey') }} description korra
 
   handlers:
     - name: Restart web UI

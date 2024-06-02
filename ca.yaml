@@ -1,0 +1,5 @@
+# code: language=ansible
+
+- name: CA Setup
+  hosts: ca.home.derham.me
+  become: true

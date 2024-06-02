@@ -1,0 +1,60 @@
+# code: language=ansible
+
+- name: Create app
+  ansible.builtin.import_tasks: tasks/application.yaml
+  vars:
+    name: transmission
+    dirs:
+      - config
+      - watch
+
+- name: Install wireguard
+  ansible.builtin.apt:
+    name: wireguard
+    state: present
+
+- name: Create wireguard-pia container
+  containers.podman.podman_container:
+    name: wireguard-pia
+    image: docker.io/thrnz/docker-wireguard-pia
+    state: started
+    restart_policy: unless-stopped
+    env:
+      LOC: swiss
+      USER: "{{ lookup('community.general.onepassword', 'Private Internet Access', field='username') }}"
+      PASS: "{{ lookup('community.general.onepassword', 'Private Internet Access', field='password') }}"
+      LOCAL_NETWORK: "192.168.0.0/24"
+      PORT_FORWARDING: "1"
+    capabilities:
+      - NET_ADMIN
+    sysctl:
+      "net.ipv4.conf.all.src_valid_mark": 1
+      "net.ipv6.conf.default.disable_ipv6": 1
+      "net.ipv6.conf.all.disable_ipv6": 1
+      "net.ipv6.conf.lo.disable_ipv6": 1
+    healthcheck:
+      test: ping -c 1 www.google.com || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "9091:9091/tcp"
+    labels:
+      caddy: transmission.home.derham.me
+      caddy.reverse_proxy: "nas.home.derham.me:9091"
+
+- name: Create transmission container
+  containers.podman.podman_container:
+    name: transmission
+    image: lscr.io/linuxserver/transmission:4.0.5
+    state: started
+    restart_policy: unless-stopped
+    env:
+      PUID: "{{ user.uid }}"
+      PGID: "{{ user.group }}"
+      TZ: "Europe/London"
+    network_mode: container:wireguard-pia
+    volumes:
+      - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
+      - "{{ app_dir.path }}/config:/config"
+      - "{{ app_dir.path }}/watch:/watch"

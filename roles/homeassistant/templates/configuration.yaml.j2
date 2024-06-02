@@ -10,4 +10,4 @@ homeassistant:
 http:
   use_x_forwarded_for: true
   trusted_proxies:
-    - {{ caddy_network.network.IPAM.Config[0].Subnet }}
+    - {{ caddy_network.network.subnets[0].subnet }}

@@ -1,0 +1,9 @@
+- Utilities:
+  - Pi-Hole:
+      icon: pi-hole.png
+      href: https://pihole.home.derham.me/admin/
+      description: DNS and adblocking
+      widget:
+        type: pihole
+        url: https://pihole.home.derham.me
+        key: 7c8a18deea9871ef0e4205f6481354a2a56f5883d7c1fcf1877687f0be361b7d

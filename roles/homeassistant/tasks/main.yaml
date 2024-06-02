@@ -5,8 +5,8 @@
   vars:
     name: homeassistant
 
-- name: Create Docker network
-  community.docker.docker_network:
+- name: Create Podman network
+  containers.podman.podman_network:
     name: caddy
   register: caddy_network
 
@@ -19,14 +19,14 @@
     mode: "0744"
 
 - name: Start Homeassistant
-  community.docker.docker_container:
+  containers.podman.podman_container:
     name: homeassistant
     image: lscr.io/linuxserver/homeassistant:2023.8.3
     state: started
     restart_policy: "unless-stopped"
-    networks:
-      - name: mosquitto
-      - name: caddy
+    network:
+      - mosquitto
+      - caddy
     env:
       PUID: "{{ user.uid }}"
       PGID: "{{ user.group }}"
@@ -46,5 +46,34 @@
       - /mnt/footage:/mnt/footage:ro
     ports:
       - 8123
-    devices:
-      - /dev/ttyACM0:/dev/ttyACM0
+    # TODO: Add USB devices for Z-Wave and Zigbee
+    # device:
+    #   - /dev/ttyACM0:/dev/ttyACM0
+
+- name: Download HACS
+  ansible.builtin.get_url:
+    url: https://get.hacs.xyz
+    dest: /tmp/hacs-installer.sh
+    owner: "{{ user.name }}"
+    group: "{{ user.name }}"
+    mode: "0744"
+    force: true
+  register: hacs_download
+
+- name: Install wget for HACS script
+  ansible.builtin.package:
+    name: wget
+    state: present
+
+- name: Install unzip for HACS script
+  ansible.builtin.package:
+    name: unzip
+    state: present
+
+- name: Install HACS
+  become: true
+  become_user: "{{ user.name }}"
+  ansible.builtin.shell: /tmp/hacs-installer.sh
+  args:
+    chdir: "{{ app_dir.path }}"
+  when: hacs_download.changed

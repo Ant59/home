@@ -26,13 +26,13 @@
     - settings
 
 - name: Start Homepage
-  community.docker.docker_container:
+  containers.podman.podman_container:
     name: homepage
-    image: ghcr.io/gethomepage/homepage:latest
+    image: ghcr.io/gethomepage/homepage:v0.8.10
     state: started
     restart_policy: "unless-stopped"
-    networks:
-      - name: caddy
+    network:
+      - caddy
     env:
       PUID: "{{ user.uid }}"
       PGID: "{{ user.group }}"

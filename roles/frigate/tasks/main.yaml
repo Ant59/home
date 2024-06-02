@@ -14,7 +14,7 @@
     mode: "0744"
 
 - name: Start Frigate
-  community.docker.docker_container:
+  containers.podman.podman_container:
     name: frigate
     image: ghcr.io/blakeblackshear/frigate:stable
     state: started
@@ -28,9 +28,9 @@
       homepage.icon: frigate.png
       homepage.href: http://frigate.home.derham.me/
       homepage.description: Network video recorder
-    networks:
-      - name: mosquitto
-      - name: caddy
+    network:
+      - mosquitto
+      - caddy
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - "{{ app_dir.path }}/config.yml:/config/config.yml"
