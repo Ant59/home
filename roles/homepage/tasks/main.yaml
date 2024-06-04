@@ -34,8 +34,8 @@
     network:
       - caddy
     env:
-      PUID: "{{ user.uid }}"
-      PGID: "{{ user.group }}"
+      # PUID: "{{ user.uid }}"
+      # PGID: "{{ user.group }}"
       TZ: Europe/London
     labels:
       caddy: homepage.home.derham.me, home.derham.me

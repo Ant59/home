@@ -54,7 +54,7 @@
       caddy: unifi.home.derham.me
       caddy.reverse_proxy: "{% raw %}{{upstreams https 8443}}{% endraw %}"
       caddy.reverse_proxy.transport: http
-      caddy.reverse_proxy.transport.tls_insecure_skip_verify:
+      caddy.reverse_proxy.transport.tls_insecure_skip_verify: ""
       homepage.group: Utilities
       homepage.name: Unifi Controller
       homepage.icon: unifi-controller.png

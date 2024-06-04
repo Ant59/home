@@ -8,19 +8,19 @@
       - data
       - config
 
-- name: Create Caddyfile
-  ansible.builtin.copy:
-    content: |
-      {
-        acme_ca https://ca.home.derham.me/acme/acme/directory
-      }
+# - name: Create Caddyfile
+#   ansible.builtin.copy:
+#     content: |
+#       {
+#         acme_ca https://ca.home.derham.me/acme/acme/directory
+#       }
 
-      nas.home.derham.me {
-        respond "Hello, world!"
-      }
-    dest: "{{ app_dir.path }}/config/Caddyfile"
-    owner: "{{ user.name }}"
-    mode: "0644"
+#       nas.home.derham.me {
+#         respond "Hello, world!"
+#       }
+#     dest: "{{ app_dir.path }}/config/Caddyfile"
+#     owner: "{{ user.name }}"
+#     mode: "0644"
 
 - name: Create Podman network
   containers.podman.podman_network:
@@ -29,7 +29,7 @@
 - name: Start Caddy
   containers.podman.podman_container:
     name: caddy
-    image: docker.io/caddy:2.7
+    image: docker.io/lucaslorentz/caddy-docker-proxy:2.9-alpine
     state: started
     restart_policy: "unless-stopped"
     network:
@@ -39,12 +39,15 @@
     env:
       CADDY_INGRESS_NETWORKS: caddy
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
       - "{{ app_dir.path }}/data:/data"
       - "{{ app_dir.path }}/config:/config"
-      - "{{ app_dir.path }}/config/Caddyfile:/etc/caddy/Caddyfile"
+      # - "{{ app_dir.path }}/config/Caddyfile:/etc/caddy/Caddyfile"
     ports:
       - 80:80
       - 443:443
       - 443:443/udp
     user: "{{ user.uid }}"
+    sysctl:
+      net.ipv4.ip_unprivileged_port_start: 0

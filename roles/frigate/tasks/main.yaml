@@ -33,7 +33,7 @@
       - caddy
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - "{{ app_dir.path }}/config.yml:/config/config.yml"
+      - "{{ app_dir.path }}:/config"
       - /mnt/footage:/media/frigate
     ports:
       - 5000
