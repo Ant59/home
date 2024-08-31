@@ -1,0 +1,28 @@
+- name: Create app
+  ansible.builtin.import_tasks: tasks/application.yaml
+  vars:
+    name: zwave-js-ui
+
+- name: Start Z-Wave JS UI
+  containers.podman.podman_container:
+    name: zwave-js-ui
+    image: docker.io/zwavejs/zwave-js-ui:latest
+    state: started
+    restart_policy: "unless-stopped"
+    network:
+      - caddy
+    env:
+      PUID: "{{ user.uid }}"
+      PGID: "{{ user.group }}"
+      TZ: Europe/London
+    labels:
+      caddy: zwave-js-ui.home.derham.me
+      caddy.reverse_proxy: "{% raw %}{{upstreams 8091}}{% endraw %}"
+    volumes:
+      - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
+      - "{{ app_dir.path }}:/usr/src/app/store"
+    device:
+      - /dev/serial/by-id/usb-0658_0200-if00:/dev/zwave
+    ports:
+      - 8091
+      - 3000:3000

@@ -1,0 +1,76 @@
+- name: Setup machine for Zigbee and Z-Wave
+  hosts: radio.home.derham.me
+  become: true
+  vars:
+    base_dir: /srv
+
+  tasks:
+    - name: Ensure the base directory exists
+      ansible.builtin.file:
+        path: /etc/terminfo/a/
+        state: directory
+        mode: "0755"
+
+    - name: Copy terminfo
+      ansible.builtin.copy:
+        src: files/alacritty.terminfo
+        dest: /etc/terminfo/a/alacritty
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install Step CLI
+      ansible.builtin.include_role:
+        name: maxhoesel.smallstep.step_cli
+      vars:
+        step_cli_version: "0.24.4"
+        step_cli_arch:
+          armv7l: "armv7"
+      tags:
+        - step
+
+    - name: Bootstrap the hosts to trust the CA
+      ansible.builtin.include_role:
+        name: maxhoesel.smallstep.step_bootstrap_host
+      vars:
+        step_cli_install: false
+        step_bootstrap_ca_url: https://ca.home.derham.me
+        step_bootstrap_fingerprint: "e0d6b8d064a2bb9adbaf327363a36f2f5233de3aa518fb9c0d9f83182e0b5a1c"
+      tags:
+        - step
+
+    - name: Install Podman
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - podman
+        - podman-docker
+      tags:
+        - podman
+
+    - name: Enable Podman socket
+      ansible.builtin.systemd:
+        name: podman.socket
+        enabled: true
+        state: started
+      tags:
+        - podman
+
+    - name: Install Caddy
+      ansible.builtin.include_role:
+        name: caddy
+        apply:
+          tags:
+            - caddy
+      tags:
+        - caddy
+
+    - name: Install Z-Wave JS UI
+      ansible.builtin.include_role:
+        name: zwave-js-ui
+        apply:
+          tags:
+            - zwave-js-ui
+      tags:
+        - zwave-js-ui

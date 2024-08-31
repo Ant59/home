@@ -28,7 +28,7 @@
 - name: Start Homepage
   containers.podman.podman_container:
     name: homepage
-    image: ghcr.io/gethomepage/homepage:v0.8.10
+    image: ghcr.io/gethomepage/homepage:v0.9.5
     state: started
     restart_policy: "unless-stopped"
     network:

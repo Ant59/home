@@ -15,10 +15,13 @@ servers:
     ca.home.derham.me:
       ansible_host: 192.168.0.94
       ansible_user: antony
+    radio.home.derham.me:
+      ansible_host: radio.home.derham.me
+      ansible_user: antony
 clients:
   hosts:
     skynet.home.derham.me:
-      ansible_host: 192.168.191
+      ansible_host: 192.168.190
       ansible_user: antony
     korra.home.derham.me:
       ansible_host: 192.168.0.60
