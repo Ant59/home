@@ -12,12 +12,16 @@
     network:
       - caddy
     env:
+      ZWAVEJS_EXTERNAL_CONFIG: /usr/src/app/store/.config-db
       PUID: "{{ user.uid }}"
       PGID: "{{ user.group }}"
       TZ: Europe/London
     labels:
       caddy: zwave-js-ui.home.derham.me
-      caddy.reverse_proxy: "{% raw %}{{upstreams 8091}}{% endraw %}"
+      caddy.0_reverse_proxy: "{% raw %}{{upstreams 8091}}{% endraw %}"
+      caddy.@ws.0_header: Connection *Upgrade*
+      caddy.@ws.1_header: Upgrade websocket
+      caddy.1_reverse_proxy: "{% raw %}@ws {{upstreams 3000}}{% endraw %}"
     volumes:
       - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
       - "{{ app_dir.path }}:/usr/src/app/store"
@@ -25,4 +29,4 @@
       - /dev/serial/by-id/usb-0658_0200-if00:/dev/zwave
     ports:
       - 8091
-      - 3000:3000
+      - 3000
