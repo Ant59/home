@@ -1,5 +1,3 @@
-# code: language=ansible
-
 - name: EdgeRouter Setup
   gather_facts: false
   hosts: router

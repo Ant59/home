@@ -1,0 +1,17 @@
+- name: Create app
+  ansible.builtin.import_tasks: tasks/application.yaml
+  vars:
+    name: matter
+
+- name: Matter Server
+  containers.podman.podman_container:
+    name: matter
+    image: ghcr.io/home-assistant-libs/python-matter-server:stable
+    state: started
+    restart_policy: "unless-stopped"
+    network: host
+    env:
+      TZ: Europe/London
+    volumes:
+      - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
+      - "{{ app_dir.path }}:/data"

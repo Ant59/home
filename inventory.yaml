@@ -1,5 +1,3 @@
-# code: language=ansible
-
 servers:
   hosts:
     router.home.derham.me:

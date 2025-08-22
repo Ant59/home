@@ -1,9 +1,12 @@
-# code: language=ansible
-
 - name: Create app
   ansible.builtin.import_tasks: tasks/application.yaml
   vars:
     name: frigate
+
+- name: Create Podman network
+  containers.podman.podman_network:
+    name: frigate
+  register: frigate_network
 
 - name: Frigate config file
   ansible.builtin.copy:
@@ -16,10 +19,11 @@
 - name: Start Frigate
   containers.podman.podman_container:
     name: frigate
-    image: ghcr.io/blakeblackshear/frigate:stable
+    image: ghcr.io/blakeblackshear/frigate:0.15.2
     state: started
     privileged: true
     restart_policy: "unless-stopped"
+    shm_size: "128mb"
     labels:
       caddy: frigate.home.derham.me
       caddy.reverse_proxy: "{% raw %}{{upstreams 5000}}{% endraw %}"
@@ -29,12 +33,18 @@
       homepage.href: http://frigate.home.derham.me/
       homepage.description: Network video recorder
     network:
+      - frigate
       - mosquitto
       - caddy
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - "{{ app_dir.path }}:/config"
       - /mnt/footage:/media/frigate
+    device:
+      - /dev/video11:/dev/video11
+      - /dev/bus/usb:/dev/bus/usb
+    tmpfs:
+      "/tmp/cache": "rw,mode=1777,size=1G"
     ports:
       - 5000
       - 8554

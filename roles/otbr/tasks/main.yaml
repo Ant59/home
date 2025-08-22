@@ -1,0 +1,30 @@
+- name: Create app
+  ansible.builtin.import_tasks: tasks/application.yaml
+  vars:
+    name: otbr
+
+- name: OpenThread Border Router
+  containers.podman.podman_container:
+    name: otbr
+    image: docker.io/openthread/border-router:latest
+    state: started
+    restart_policy: always
+    network: host
+    env:
+      TZ: Europe/London
+      OT_RCP_DEVICE: spinel+hdlc+uart:///dev/ttyACM0?uart-baudrate=460800
+      OT_INFRA_IF: eth0
+      OT_LOG_LEVEL: 7
+      WEB_GUI: 1
+      REST_API: 1
+      OT_REST_LISTEN_ADDR: 0.0.0.0
+      OT_REST_LISTEN_PORT: 9212
+    volumes:
+      - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
+      - "{{ app_dir.path }}:/data"
+    device:
+      - /dev/serial/by-id/usb-Itead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_V2_22ad528cf673ef11be64df1e313510fd-if00-port0:/dev/ttyACM0
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW

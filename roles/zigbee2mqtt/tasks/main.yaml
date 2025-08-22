@@ -1,0 +1,39 @@
+- name: Create app
+  ansible.builtin.import_tasks: tasks/application.yaml
+  vars:
+    name: zigbee2mqtt
+    dirs:
+      - data
+
+- name: Zigbee2MQTT config file
+  ansible.builtin.copy:
+    src: configuration.yaml
+    dest: "{{ app_dir.path }}/data/configuration.yaml"
+    owner: "{{ user.name }}"
+    group: "{{ user.name }}"
+    mode: "0744"
+
+- name: Start Zigbee2MQTT
+  containers.podman.podman_container:
+    name: zigbee2mqtt
+    image: ghcr.io/koenkk/zigbee2mqtt:2.6
+    state: started
+    restart_policy: "unless-stopped"
+    network:
+      - mosquitto
+    env:
+      TZ: Europe/London
+    labels:
+      caddy: zigbee2mqtt.home.derham.me
+      caddy.reverse_proxy: "{% raw %}{{upstreams 8080}}{% endraw %}"
+    volumes:
+      - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
+      - "{{ app_dir.path }}/data:/app/data"
+      - /run/udev:/run/udev:ro
+    device:
+      - /dev/serial/by-id/usb-ITEAD_SONOFF_Zigbee_3.0_USB_Dongle_Plus_V2_20230509101425-if00:/dev/ttyACM0
+    ports:
+      - 8080
+    user: "{{ user.uid }}"
+    group_add:
+      - dialout

@@ -8,23 +8,10 @@
       - data
       - config
 
-# - name: Create Caddyfile
-#   ansible.builtin.copy:
-#     content: |
-#       {
-#         acme_ca https://ca.home.derham.me/acme/acme/directory
-#       }
-
-#       nas.home.derham.me {
-#         respond "Hello, world!"
-#       }
-#     dest: "{{ app_dir.path }}/config/Caddyfile"
-#     owner: "{{ user.name }}"
-#     mode: "0644"
-
 - name: Create Podman network
   containers.podman.podman_network:
     name: caddy
+  register: caddy_network
 
 - name: Start Caddy
   containers.podman.podman_container:
@@ -43,7 +30,6 @@
       - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
       - "{{ app_dir.path }}/data:/data"
       - "{{ app_dir.path }}/config:/config"
-      # - "{{ app_dir.path }}/config/Caddyfile:/etc/caddy/Caddyfile"
     ports:
       - 80:80
       - 443:443

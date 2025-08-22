@@ -1,0 +1,9 @@
+version: 4
+mqtt:
+  base_topic: zigbee2mqtt
+  server: mqtt://mosquitto:1883
+frontend:
+  enabled: true
+  port: 8080
+homeassistant:
+  enabled: true

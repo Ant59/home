@@ -1,5 +1,3 @@
-# code: language=ansible
-
 - name: Create app
   ansible.builtin.import_tasks: tasks/application.yaml
   vars:
@@ -28,7 +26,7 @@
 - name: Start Homepage
   containers.podman.podman_container:
     name: homepage
-    image: ghcr.io/gethomepage/homepage:v0.9.5
+    image: ghcr.io/gethomepage/homepage:v1.4.4
     state: started
     restart_policy: "unless-stopped"
     network:
@@ -37,6 +35,7 @@
       # PUID: "{{ user.uid }}"
       # PGID: "{{ user.group }}"
       TZ: Europe/London
+      HOMEPAGE_ALLOWED_HOSTS: home.derham.me,homepage.home.derham.me
     labels:
       caddy: homepage.home.derham.me, home.derham.me
       caddy.reverse_proxy: "{% raw %}{{upstreams 3000}}{% endraw %}"
