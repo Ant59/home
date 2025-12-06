@@ -20,6 +20,7 @@
     state: started
     restart_policy: "unless-stopped"
     network:
+      - caddy
       - mosquitto
     env:
       TZ: Europe/London
